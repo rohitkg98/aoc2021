@@ -24,11 +24,13 @@ data class Line(val start: Point, val end: Point) {
     }
 }
 
-class Plane(lines: List<Line>) {
-    private val markedLines = Array(1000) { IntArray(1000) }
+open class Plane(lines: List<Line>) {
+    protected val markedLines = Array(1000) { IntArray(1000) }
 
-    operator fun set(p: Point, i: Int) {
-        markedLines[p.x][p.y] = i
+    init {
+        lines.forEach { line ->
+            line.points().forEach { p -> markedLines[p.x][p.y] += 1 }
+        }
     }
 
     operator fun get(p: Point): Int {
@@ -37,6 +39,12 @@ class Plane(lines: List<Line>) {
 
     fun getMoreThanTwiceVisited(): Int {
         return markedLines.flatMap { it.filter { i -> i >= 2 } }.size
+    }
+}
+
+class MutablePlane(lines: List<Line>) : Plane(lines) {
+    operator fun set(p: Point, i: Int) {
+        markedLines[p.x][p.y] = i
     }
 }
 
@@ -58,17 +66,11 @@ object Day5 : Day() {
     private fun part2(ventLines: List<Line>) {
         val plane = Plane(ventLines)
 
-        ventLines.forEach { line -> line.points().forEach { p -> plane[p] += 1 } }
-
         println("Total lines with more than two visits ${plane.getMoreThanTwiceVisited()}")
     }
 
     private fun part1(ventLines: List<Line>) {
-        val plane = Plane(ventLines)
-
-        ventLines.filter { it.isHorizontalOrVertical() }.forEach { line ->
-            line.points().forEach { p -> plane[p] += 1 }
-        }
+        val plane = Plane(ventLines.filter { it.isHorizontalOrVertical() })
 
         println("Total vertical/horizontal lines with more than 2 visits ${plane.getMoreThanTwiceVisited()}")
     }
