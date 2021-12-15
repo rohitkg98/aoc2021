@@ -4,7 +4,8 @@ fun main(args: Array<String>) {
         "2" to Day2,
         "3" to Day3,
         "4" to Day4,
-        "5" to Day5
+        "5" to Day5,
+        "6" to Day6,
     )
 
     dayToExe[args[0]]?.main()
