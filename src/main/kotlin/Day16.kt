@@ -2,7 +2,6 @@ sealed class Packet(val version: Long) {
     abstract fun versionSum(): Long
     abstract fun value(): Long
 
-
     companion object {
         fun parse(binary: String): List<Packet> {
             if (binary.isEmpty() || binary.length < 7) {
@@ -14,34 +13,40 @@ sealed class Packet(val version: Long) {
             val packetData = binary.drop(6)
 
             return when (typeID) {
-                4L -> {
-                    val literalParts = packetData.chunked(5).takeWhileInclusive { it[0] != '0' }
-                    listOf(
-                        Literal(
-                            version, literalParts.fold("") { acc, num -> acc + num.drop(1) }.toLong(2)
-                        )
-                    ) + parse(packetData.drop(literalParts.size * 5))
-                }
-                else -> {
-                    when (packetData.first()) {
-                        '0' -> { // next 15 bits are the length of the sub-packets
-                            val subPacketsLen = packetData.drop(1).take(15).toInt(2)
-
-                            listOf(Operator(version, typeID, parse(packetData.drop(16).take(subPacketsLen)))) + parse(
-                                packetData.drop(16 + subPacketsLen)
-                            )
-                        }
-                        '1' -> { // next 11 bits are number of sub-packets in the packet
-                            val nSubPackets = packetData.drop(1).take(11).toInt(2)
-
-                            val rest = parse(packetData.drop(12))
-
-                            listOf(Operator(version, typeID, rest.take(nSubPackets))) + rest.drop(nSubPackets)
-                        }
-                        else -> throw Exception("Malformed Packet")
-                    }
-                }
+                4L -> parseLiteral(packetData, version)
+                else -> parseOperator(packetData, version, typeID)
             }
+        }
+
+        private fun parseLiteral(packetData: String, version: Long): List<Packet> {
+            val literalParts = packetData.chunked(5).takeWhileInclusive { it[0] != '0' }
+            return listOf(
+                Literal(
+                    version, literalParts.fold("") { acc, num -> acc + num.drop(1) }.toLong(2)
+                )
+            ) + parse(packetData.drop(literalParts.size * 5))
+        }
+
+        private fun parseOperator(
+            packetData: String,
+            version: Long,
+            typeID: Long
+        ) = when (packetData.first()) {
+            '0' -> { // next 15 bits are the length of the sub-packets
+                val subPacketsLen = packetData.drop(1).take(15).toInt(2)
+
+                listOf(Operator(version, typeID, parse(packetData.drop(16).take(subPacketsLen)))) + parse(
+                    packetData.drop(16 + subPacketsLen)
+                )
+            }
+            '1' -> { // next 11 bits are number of sub-packets in the packet
+                val nSubPackets = packetData.drop(1).take(11).toInt(2)
+
+                val rest = parse(packetData.drop(12))
+
+                listOf(Operator(version, typeID, rest.take(nSubPackets))) + rest.drop(nSubPackets)
+            }
+            else -> throw Exception("Malformed Packet")
         }
     }
 
@@ -55,7 +60,7 @@ sealed class Packet(val version: Long) {
         override fun value(): Long {
             return when (typeID) {
                 0L -> subPackets.sumOf { it.value() }
-                1L -> subPackets.fold(1L) {acc, p -> acc * p.value()  }
+                1L -> subPackets.fold(1L) { acc, p -> acc * p.value() }
                 2L -> subPackets.minOf { it.value() }
                 3L -> subPackets.maxOf { it.value() }
                 5L -> if (subPackets.first().value() > subPackets.last().value()) 1L else 0L
