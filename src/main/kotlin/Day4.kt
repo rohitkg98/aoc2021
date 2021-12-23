@@ -1,5 +1,3 @@
-data class CoOrdinate(val row: Int, val col: Int)
-
 data class Board(val board: String) {
     var rowSums = IntArray(5)
     var colSums = IntArray(5)
