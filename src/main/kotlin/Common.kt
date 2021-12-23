@@ -75,3 +75,11 @@ fun <E> List2D<E>.lastCoOrdinate() = CoOrdinate(lastIndex, get(0).lastIndex)
 
 fun <E> List2D<E>.verticalMerge(other: List2D<E>) = this.zip(other).map { (l1, l2) -> l1 + l2 }
 
+fun <T> List<T>.takeWhileInclusive(pred: (T) -> Boolean): List<T> {
+    var shouldContinue = true
+    return takeWhile {
+        val result = shouldContinue
+        shouldContinue = pred(it)
+        result
+    }
+}
