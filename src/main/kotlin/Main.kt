@@ -16,6 +16,7 @@ fun main(args: Array<String>) {
         "14" to Day14,
         "15" to Day15,
         "16" to Day16,
+        "17" to Day17,
     )
 
     dayToExe[args[0]]?.main()
